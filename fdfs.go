@@ -9,15 +9,28 @@ type Client struct {
 	tracker_port int
 }
 
-func (c Client) Upload(file io.Reader) string {
+func (c Client) Upload(file io.Reader) (string, error) {
 	tracker := &Tracker{c.tracker_host, c.tracker_port}
-	storage := tracker.getUploadStorage()
-	fileId := storage.upload(file)
-	return fileId
+	storage, err := tracker.getUploadStorage()
+	if err != nil {
+		return "", err
+	}
+	fileId, err := storage.upload(file)
+	if err != nil {
+		return "", err
+	}
+	return fileId, nil
 }
 
-func (c Client) Download(fileId string, w io.Writer) {
+func (c Client) Download(fileId string, w io.Writer) error {
 	tracker := &Tracker{c.tracker_host, c.tracker_port}
-	storage := tracker.getDownloadStorage(fileId)
-	storage.download(fileId, w)
+	storage, err := tracker.getDownloadStorage(fileId)
+	if err != nil {
+		return err
+	}
+	err = storage.download(fileId, w)
+	if err != nil {
+		return err
+	}
+	return nil
 }

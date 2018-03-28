@@ -2,6 +2,7 @@ package fdfs
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -12,11 +13,11 @@ type Tracker struct {
 	port int
 }
 
-func (t Tracker) getUploadStorage() *Storage {
+func (t Tracker) getUploadStorage() (*Storage, error) {
 	address := fmt.Sprintf("%s:%d", t.host, t.port)
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	trackerReqHeader := &Header{
@@ -30,7 +31,7 @@ func (t Tracker) getUploadStorage() *Storage {
 	n, err := conn.Read(bs)
 
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	trackerResp := bs[:n]
 
@@ -40,7 +41,7 @@ func (t Tracker) getUploadStorage() *Storage {
 	}
 	trackerRespHeader.decode()
 	if trackerRespHeader.length != 40 || trackerRespHeader.status != 0 {
-		panic("内部错误")
+		return nil, errors.New("[tracker]状态码错误")
 	}
 
 	trackerRespBody := trackerResp[10:]
@@ -54,14 +55,14 @@ func (t Tracker) getUploadStorage() *Storage {
 		host:  host,
 		port:  port,
 		index: index,
-	}
+	}, nil
 }
 
-func (t Tracker) getDownloadStorage(fileId string) *Storage {
+func (t Tracker) getDownloadStorage(fileId string) (*Storage, error) {
 	address := fmt.Sprintf("%s:%d", t.host, t.port)
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	ss := strings.SplitN(fileId, "/", 2)
@@ -83,7 +84,7 @@ func (t Tracker) getDownloadStorage(fileId string) *Storage {
 	b = make([]byte, 1024)
 	n, err := conn.Read(b)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	trackerResp := b[:n]
 
@@ -93,7 +94,7 @@ func (t Tracker) getDownloadStorage(fileId string) *Storage {
 	}
 	trackerRespHeader.decode()
 	if trackerRespHeader.length != 39 || trackerRespHeader.status != 0 {
-		panic("内部错误")
+		return nil, errors.New("[tracker]状态码错误")
 	}
 
 	trackerRespBody := trackerResp[10:]
@@ -105,5 +106,5 @@ func (t Tracker) getDownloadStorage(fileId string) *Storage {
 		group: group,
 		host:  host,
 		port:  port,
-	}
+	}, nil
 }

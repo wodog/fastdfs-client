@@ -2,6 +2,7 @@ package fdfs
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -16,16 +17,15 @@ type Storage struct {
 	index byte
 }
 
-func (s *Storage) upload(file io.Reader) string {
+func (s *Storage) upload(file io.Reader) (string, error) {
 	bs, err := ioutil.ReadAll(file)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	fmt.Println(bs)
 
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", s.host, s.port))
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	respHeader := &Header{
 		length:  uint64(len(bs)) + 15,
@@ -44,7 +44,7 @@ func (s *Storage) upload(file io.Reader) string {
 	b := make([]byte, 1024)
 	n, err := conn.Read(b)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	storageResp := b[:n]
 
@@ -54,23 +54,23 @@ func (s *Storage) upload(file io.Reader) string {
 	}
 	storageRespHeader.decode()
 	if storageRespHeader.status != 0 {
-		panic(err)
+		return "", errors.New("[storage]状态码错误")
 	}
 
 	storageRespBody := storageResp[10:]
 	group := string(storageRespBody[:16])
 	path := string(storageRespBody[16:])
-	return group + "/" + path
+	return group + "/" + path, nil
 }
 
-func (s *Storage) download(fileId string, w io.Writer) {
+func (s *Storage) download(fileId string, w io.Writer) error {
 	ss := strings.SplitN(fileId, "/", 2)
 	group := ss[0]
 	path := ss[1]
 
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", s.host, s.port))
 	if err != nil {
-		panic(err)
+		return err
 	}
 	respHeader := &Header{
 		length:  8 + 8 + 16 + uint64(len(path)),
@@ -89,7 +89,7 @@ func (s *Storage) download(fileId string, w io.Writer) {
 	b := make([]byte, 1024)
 	n, err := conn.Read(b)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	storageResp := b[:n]
 	// 检查header
@@ -98,9 +98,9 @@ func (s *Storage) download(fileId string, w io.Writer) {
 	}
 	storageRespHeader.decode()
 	if storageRespHeader.status != 0 {
-		panic(err)
+		return errors.New("[storage]状态码错误")
 	}
 	storageRespBody := storageResp[10:]
-	fmt.Println(storageRespBody)
 	w.Write(storageRespBody)
+	return nil
 }
