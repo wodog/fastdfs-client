@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+	"strings"
 )
 
 type Tracker struct {
@@ -11,7 +12,7 @@ type Tracker struct {
 	port int
 }
 
-func (t Tracker) getStorage(command byte) *Storage {
+func (t Tracker) getUploadStorage() *Storage {
 	address := fmt.Sprintf("%s:%d", t.host, t.port)
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
@@ -20,7 +21,7 @@ func (t Tracker) getStorage(command byte) *Storage {
 
 	trackerReqHeader := &Header{
 		length:  0,
-		command: command,
+		command: TRACKER_PROTO_CMD_SERVICE_QUERY_STORE_WITHOUT_GROUP_ONE,
 		status:  0,
 	}
 	conn.Write(trackerReqHeader.encode())
@@ -53,5 +54,56 @@ func (t Tracker) getStorage(command byte) *Storage {
 		host:  host,
 		port:  port,
 		index: index,
+	}
+}
+
+func (t Tracker) getDownloadStorage(fileId string) *Storage {
+	address := fmt.Sprintf("%s:%d", t.host, t.port)
+	conn, err := net.Dial("tcp", address)
+	if err != nil {
+		panic(err)
+	}
+
+	ss := strings.SplitN(fileId, "/", 2)
+	group := ss[0]
+	path := ss[1]
+	trackerReqHeader := &Header{
+		length:  uint64(FDFS_GROUP_NAME_MAX_LEN + len(path)),
+		command: TRACKER_PROTO_CMD_SERVICE_QUERY_FETCH_ONE,
+		status:  0,
+	}
+
+	conn.Write(trackerReqHeader.encode())
+	r := strings.NewReader(group)
+	b := make([]byte, 16)
+	r.Read(b)
+	conn.Write(b)
+	conn.Write([]byte(path))
+
+	b = make([]byte, 1024)
+	n, err := conn.Read(b)
+	if err != nil {
+		panic(err)
+	}
+	trackerResp := b[:n]
+
+	// 解析header
+	trackerRespHeader := &Header{
+		buf: trackerResp[:10],
+	}
+	trackerRespHeader.decode()
+	if trackerRespHeader.length != 39 || trackerRespHeader.status != 0 {
+		panic("内部错误")
+	}
+
+	trackerRespBody := trackerResp[10:]
+	group = string(trackerRespBody[:16])
+	host := string(trackerRespBody[16 : 16+15])
+	port := int(binary.BigEndian.Uint64(trackerRespBody[16+15 : 16+15+8]))
+
+	return &Storage{
+		group: group,
+		host:  host,
+		port:  port,
 	}
 }

@@ -1,7 +1,6 @@
 package fdfs
 
 import (
-	"fmt"
 	"io"
 )
 
@@ -12,11 +11,13 @@ type Client struct {
 
 func (c Client) Upload(file io.Reader) string {
 	tracker := &Tracker{c.tracker_host, c.tracker_port}
-	storage := tracker.getStorage(TRACKER_PROTO_CMD_SERVICE_QUERY_STORE_WITHOUT_GROUP_ONE)
+	storage := tracker.getUploadStorage()
 	fileId := storage.upload(file)
 	return fileId
 }
 
-func (c Client) Download() {
-	fmt.Println("TODO")
+func (c Client) Download(fileId string, w io.Writer) {
+	tracker := &Tracker{c.tracker_host, c.tracker_port}
+	storage := tracker.getDownloadStorage(fileId)
+	storage.download(fileId, w)
 }
