@@ -62,7 +62,7 @@ func (s *Storage) upload(file io.Reader) (string, error) {
 	storageRespBody := storageResp[10:]
 	group := string(storageRespBody[:16])
 	path := string(storageRespBody[16:])
-	return group + "/" + path, nil
+	return strings.Replace(group+"/"+path, "\u0000", "", -1), nil
 }
 
 func (s *Storage) download(fileId string, w io.Writer) error {
