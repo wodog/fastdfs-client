@@ -15,7 +15,7 @@ type Tracker struct {
 
 func (t Tracker) getUploadStorage() (*Storage, error) {
 	address := fmt.Sprintf("%s:%d", t.host, t.port)
-	conn, err := net.Dial("tcp", address)
+	conn, err := net.DialTimeout("tcp", address, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (t Tracker) getUploadStorage() (*Storage, error) {
 
 func (t Tracker) getDownloadStorage(fileId string) (*Storage, error) {
 	address := fmt.Sprintf("%s:%d", t.host, t.port)
-	conn, err := net.Dial("tcp", address)
+	conn, err := net.DialTimeout("tcp", address, timeout)
 	if err != nil {
 		return nil, err
 	}

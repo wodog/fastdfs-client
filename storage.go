@@ -23,7 +23,7 @@ func (s *Storage) upload(file io.Reader) (string, error) {
 		return "", err
 	}
 
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", s.host, s.port))
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", s.host, s.port), timeout)
 	if err != nil {
 		return "", err
 	}
@@ -68,7 +68,7 @@ func (s *Storage) download(fileId string, w io.Writer) error {
 	group := ss[0]
 	path := ss[1]
 
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", s.host, s.port))
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", s.host, s.port), timeout)
 	if err != nil {
 		return err
 	}

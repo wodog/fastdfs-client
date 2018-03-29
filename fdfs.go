@@ -1,16 +1,37 @@
 package fdfs
 
 import (
+	"errors"
 	"io"
+	"time"
 )
 
+var timeout = 10 * time.Second
+
 type Client struct {
-	tracker_host string
-	tracker_port int
+	trackers []*Tracker
 }
 
-func (c Client) Upload(file io.Reader) (string, error) {
-	tracker := &Tracker{c.tracker_host, c.tracker_port}
+func New() *Client {
+	return &Client{}
+}
+
+func (c *Client) AddTracker(host string, port int) {
+	c.trackers = append(c.trackers, &Tracker{
+		host,
+		port,
+	})
+}
+
+func (c *Client) SetTimeout(t time.Duration) {
+	timeout = t
+}
+
+func (c *Client) Upload(file io.Reader) (string, error) {
+	tracker, err := c.getTracker()
+	if err != nil {
+		return "", err
+	}
 	storage, err := tracker.getUploadStorage()
 	if err != nil {
 		return "", err
@@ -22,8 +43,11 @@ func (c Client) Upload(file io.Reader) (string, error) {
 	return fileId, nil
 }
 
-func (c Client) Download(fileId string, w io.Writer) error {
-	tracker := &Tracker{c.tracker_host, c.tracker_port}
+func (c *Client) Download(fileId string, w io.Writer) error {
+	tracker, err := c.getTracker()
+	if err != nil {
+		return err
+	}
 	storage, err := tracker.getDownloadStorage(fileId)
 	if err != nil {
 		return err
@@ -33,4 +57,12 @@ func (c Client) Download(fileId string, w io.Writer) error {
 		return err
 	}
 	return nil
+}
+
+func (c *Client) getTracker() (*Tracker, error) {
+	if len(c.trackers) == 0 {
+		return nil, errors.New("没有添加tracker")
+	}
+	tracker := c.trackers[0]
+	return tracker, nil
 }
