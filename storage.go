@@ -27,6 +27,8 @@ func (s *Storage) upload(file io.Reader) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer conn.Close()
+
 	respHeader := &Header{
 		length:  uint64(len(bs)) + 15,
 		command: STORAGE_PROTO_CMD_UPLOAD_FILE,
@@ -72,6 +74,8 @@ func (s *Storage) download(fileId string, w io.Writer) error {
 	if err != nil {
 		return err
 	}
+	defer conn.Close()
+
 	respHeader := &Header{
 		length:  8 + 8 + 16 + uint64(len(path)),
 		command: STORAGE_PROTO_CMD_DOWNLOAD_FILE,

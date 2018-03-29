@@ -19,6 +19,7 @@ func (t Tracker) getUploadStorage() (*Storage, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer conn.Close()
 
 	trackerReqHeader := &Header{
 		length:  0,
@@ -64,6 +65,7 @@ func (t Tracker) getDownloadStorage(fileId string) (*Storage, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer conn.Close()
 
 	ss := strings.SplitN(fileId, "/", 2)
 	group := ss[0]

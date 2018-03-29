@@ -16,10 +16,8 @@ package main
 import "github.com/wodog/fastdfs-client"
 
 func main() {
-  client := &fdfs.Client{
-    tracker_host: "xxx.com",
-    tracker_port: 22122,
-  }
+  client := fstdfs.New()
+	client.AddTracker("my.fastdfs.com", 22122)
 
   // upload file
   file, _ := os.Open(fileName)
@@ -33,3 +31,4 @@ func main() {
 #### Reference
 
 [协议参考](http://weakyon.com/2014/09/01/analysis-of-source-code-for-fastdfs.html)
+[nodejs客户端](https://github.com/ymyang/fdfs)
