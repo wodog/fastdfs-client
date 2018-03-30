@@ -7,16 +7,16 @@ import (
 
 // func TestUpload(t *testing.T) {
 // 	client := New()
-// 	client.AddTracker("zpbeer.com", 22122)
+// 	client.AddTracker("zpbeer.com:22122")
 // 	file, err := os.Open("README.md")
 // 	if err != nil {
 // 		panic(err)
 // 	}
-// 	fileId, err := client.Upload(file)
+// 	fileID, err := client.Upload(file)
 // 	if err != nil {
 // 		panic(err)
 // 	}
-// 	fmt.Println(fileId)
+// 	fmt.Println(fileID)
 // }
 
 func TestDownload(t *testing.T) {

@@ -17,7 +17,7 @@ import "github.com/wodog/fastdfs-client"
 
 func main() {
   client := fstdfs.New()
-	client.AddTracker("my.fastdfs.com", 22122)
+	client.AddTracker("my.fastdfs.com:22122")
 
   // upload file
   file, _ := os.Open(fileName)

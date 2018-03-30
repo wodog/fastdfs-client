@@ -11,9 +11,9 @@ import (
 )
 
 type Storage struct {
-	group string
 	host  string
 	port  string
+	group string
 	index byte
 }
 
@@ -29,39 +29,38 @@ func (s *Storage) upload(file io.Reader) (string, error) {
 	}
 	defer conn.Close()
 
+	buf := &bytes.Buffer{}
+	buf.WriteByte(s.index)
+	buf.Write(lengthByte(uint64(len(bs))))
+	buf.Write(make([]byte, 6))
+	buf.Write(bs)
 	respHeader := &Header{
-		length:  uint64(len(bs)) + 15,
+		length:  uint64(buf.Len()),
 		command: STORAGE_PROTO_CMD_UPLOAD_FILE,
 		status:  0,
 	}
 	conn.Write(respHeader.encode())
+	conn.Write(buf.Bytes())
 
-	buffer := &bytes.Buffer{}
-	buffer.WriteByte(s.index)
-	buffer.Write(lengthByte(uint64(len(bs))))
-	buffer.Write(make([]byte, 6))
-	conn.Write(buffer.Bytes())
-	conn.Write(bs)
-
-	b := make([]byte, 1024)
-	n, err := conn.Read(b)
+	b := make([]byte, 10)
+	_, err = io.ReadFull(conn, b)
 	if err != nil {
 		return "", err
 	}
-	storageResp := b[:n]
-
-	// 检查header
-	storageRespHeader := &Header{
-		buf: storageResp[:10],
+	header := &Header{
+		buf: b,
 	}
-	storageRespHeader.decode()
-	if storageRespHeader.status != 0 {
+	header.decode()
+	if header.status != 0 {
 		return "", errors.New("[storage]状态码错误")
 	}
-
-	storageRespBody := storageResp[10:]
-	group := clearZero(string(storageRespBody[:16]))
-	path := clearZero(string(storageRespBody[16:]))
+	b = make([]byte, header.length)
+	_, err = io.ReadFull(conn, b)
+	if err != nil {
+		return "", err
+	}
+	group := clearZero(string(b[:16]))
+	path := clearZero(string(b[16:]))
 	return group + "/" + path, nil
 }
 
@@ -76,35 +75,39 @@ func (s *Storage) download(fileId string, w io.Writer) error {
 	}
 	defer conn.Close()
 
-	respHeader := &Header{
-		length:  8 + 8 + 16 + uint64(len(path)),
+	buf := &bytes.Buffer{}
+	buf.Write(lengthByte(0))
+	buf.Write(lengthByte(0))
+	b := make([]byte, 16)
+	copy(b, group)
+	buf.Write(b)
+	buf.WriteString(path)
+
+	header := &Header{
+		length:  uint64(buf.Len()),
 		command: STORAGE_PROTO_CMD_DOWNLOAD_FILE,
 		status:  0,
 	}
-	conn.Write(respHeader.encode())
-	conn.Write(lengthByte(0))
-	conn.Write(lengthByte(0))
-	r1 := strings.NewReader(group)
-	b1 := make([]byte, 16)
-	r1.Read(b1)
-	conn.Write(b1)
-	conn.Write([]byte(path))
+	conn.Write(header.encode())
+	conn.Write(buf.Bytes())
 
-	b := make([]byte, 1024)
-	n, err := conn.Read(b)
+	b = make([]byte, 10)
+	_, err = io.ReadFull(conn, b)
 	if err != nil {
 		return err
 	}
-	storageResp := b[:n]
-	// 检查header
-	storageRespHeader := &Header{
-		buf: storageResp[:10],
+	header = &Header{
+		buf: b,
 	}
-	storageRespHeader.decode()
-	if storageRespHeader.status != 0 {
+	header.decode()
+	if header.status != 0 {
 		return errors.New("[storage]状态码错误")
 	}
-	storageRespBody := storageResp[10:]
-	w.Write(storageRespBody)
+	b = make([]byte, header.length)
+	_, err = io.ReadFull(conn, b)
+	if err != nil {
+		return err
+	}
+	w.Write(b)
 	return nil
 }
