@@ -21,8 +21,11 @@ import (
 
 func TestDownload(t *testing.T) {
 	client := New()
-	client.AddTracker("zpbeer.com", 22122)
-	err := client.Download("group1/M00/00/00/eBg-z1q7wNOAeQUsAAACLtpjbEY0261044", os.Stdout)
+	err := client.AddTracker("zpbeer.com:22122")
+	if err != nil {
+		panic(err)
+	}
+	err = client.Download("group1/M00/00/00/eBg-z1q7wNOAeQUsAAACLtpjbEY0261044", os.Stdout)
 	if err != nil {
 		panic(err)
 	}

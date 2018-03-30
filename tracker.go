@@ -5,16 +5,17 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 )
 
 type Tracker struct {
 	host string
-	port int
+	port string
 }
 
 func (t Tracker) getUploadStorage() (*Storage, error) {
-	address := fmt.Sprintf("%s:%d", t.host, t.port)
+	address := fmt.Sprintf("%s:%s", t.host, t.port)
 	conn, err := net.DialTimeout("tcp", address, timeout)
 	if err != nil {
 		return nil, err
@@ -48,7 +49,7 @@ func (t Tracker) getUploadStorage() (*Storage, error) {
 	trackerRespBody := trackerResp[10:]
 	group := string(trackerRespBody[:16])
 	host := string(trackerRespBody[16 : 16+15])
-	port := int(binary.BigEndian.Uint64(trackerRespBody[16+15 : 16+15+8]))
+	port := strconv.Itoa(int(binary.BigEndian.Uint64(trackerRespBody[16+15 : 16+15+8])))
 	index := trackerRespBody[16+15+8 : 16+15+8+1][0]
 
 	return &Storage{
@@ -60,7 +61,7 @@ func (t Tracker) getUploadStorage() (*Storage, error) {
 }
 
 func (t Tracker) getDownloadStorage(fileId string) (*Storage, error) {
-	address := fmt.Sprintf("%s:%d", t.host, t.port)
+	address := fmt.Sprintf("%s:%s", t.host, t.port)
 	conn, err := net.DialTimeout("tcp", address, timeout)
 	if err != nil {
 		return nil, err
@@ -102,7 +103,7 @@ func (t Tracker) getDownloadStorage(fileId string) (*Storage, error) {
 	trackerRespBody := trackerResp[10:]
 	group = string(trackerRespBody[:16])
 	host := string(trackerRespBody[16 : 16+15])
-	port := int(binary.BigEndian.Uint64(trackerRespBody[16+15 : 16+15+8]))
+	port := strconv.Itoa(int(binary.BigEndian.Uint64(trackerRespBody[16+15 : 16+15+8])))
 
 	return &Storage{
 		group: group,

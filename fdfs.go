@@ -3,6 +3,7 @@ package fdfs
 import (
 	"errors"
 	"io"
+	"net"
 	"time"
 )
 
@@ -16,11 +17,16 @@ func New() *Client {
 	return &Client{}
 }
 
-func (c *Client) AddTracker(host string, port int) {
+func (c *Client) AddTracker(tracker string) error {
+	host, port, err := net.SplitHostPort(tracker)
+	if err != nil {
+		return err
+	}
 	c.trackers = append(c.trackers, &Tracker{
 		host,
 		port,
 	})
+	return nil
 }
 
 func (c *Client) SetTimeout(t time.Duration) {
