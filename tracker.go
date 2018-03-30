@@ -47,8 +47,8 @@ func (t Tracker) getUploadStorage() (*Storage, error) {
 	}
 
 	trackerRespBody := trackerResp[10:]
-	group := string(trackerRespBody[:16])
-	host := string(trackerRespBody[16 : 16+15])
+	group := clearZero(string(trackerRespBody[:16]))
+	host := clearZero(string(trackerRespBody[16 : 16+15]))
 	port := strconv.Itoa(int(binary.BigEndian.Uint64(trackerRespBody[16+15 : 16+15+8])))
 	index := trackerRespBody[16+15+8 : 16+15+8+1][0]
 
@@ -101,8 +101,8 @@ func (t Tracker) getDownloadStorage(fileId string) (*Storage, error) {
 	}
 
 	trackerRespBody := trackerResp[10:]
-	group = string(trackerRespBody[:16])
-	host := string(trackerRespBody[16 : 16+15])
+	group = clearZero(string(trackerRespBody[:16]))
+	host := clearZero(string(trackerRespBody[16 : 16+15]))
 	port := strconv.Itoa(int(binary.BigEndian.Uint64(trackerRespBody[16+15 : 16+15+8])))
 
 	return &Storage{
