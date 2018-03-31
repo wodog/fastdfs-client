@@ -9,31 +9,32 @@ import (
 
 var timeout = 10 * time.Second
 
-type Client struct {
-	trackers []*Tracker
+type client struct {
+	trackers []*tracker
 }
 
-func New() *Client {
-	return &Client{}
+// New client
+func New() *client {
+	return &client{}
 }
 
-func (c *Client) AddTracker(tracker string) error {
-	host, port, err := net.SplitHostPort(tracker)
+func (c *client) AddTracker(trackerAddr string) error {
+	host, port, err := net.SplitHostPort(trackerAddr)
 	if err != nil {
 		return err
 	}
-	c.trackers = append(c.trackers, &Tracker{
+	c.trackers = append(c.trackers, &tracker{
 		host,
 		port,
 	})
 	return nil
 }
 
-func (c *Client) SetTimeout(t time.Duration) {
+func (c *client) SetTimeout(t time.Duration) {
 	timeout = t
 }
 
-func (c *Client) Upload(file io.Reader) (string, error) {
+func (c *client) Upload(file io.Reader) (string, error) {
 	tracker, err := c.getTracker()
 	if err != nil {
 		return "", err
@@ -42,30 +43,30 @@ func (c *Client) Upload(file io.Reader) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fileId, err := storage.upload(file)
+	fileID, err := storage.upload(file)
 	if err != nil {
 		return "", err
 	}
-	return fileId, nil
+	return fileID, nil
 }
 
-func (c *Client) Download(fileId string, w io.Writer) error {
+func (c *client) Download(fileID string, w io.Writer) error {
 	tracker, err := c.getTracker()
 	if err != nil {
 		return err
 	}
-	storage, err := tracker.getDownloadStorage(fileId)
+	storage, err := tracker.getDownloadStorage(fileID)
 	if err != nil {
 		return err
 	}
-	err = storage.download(fileId, w)
+	err = storage.download(fileID, w)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *Client) getTracker() (*Tracker, error) {
+func (c *client) getTracker() (*tracker, error) {
 	if len(c.trackers) == 0 {
 		return nil, errors.New("没有添加tracker")
 	}

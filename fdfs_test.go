@@ -25,7 +25,7 @@ func TestDownload(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	err = client.Download("group1/M00/00/00/eBg-z1q7wNOAeQUsAAACLtpjbEY0261044", os.Stdout)
+	err = client.Download("group1/M00/00/00/eBg-z1q-1CWAOOR4AAACUPg8FDI1021631", os.Stdout)
 	if err != nil {
 		panic(err)
 	}

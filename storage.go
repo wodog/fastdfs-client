@@ -2,7 +2,6 @@ package fdfs
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,15 +9,15 @@ import (
 	"strings"
 )
 
-type Storage struct {
+type storage struct {
 	host  string
 	port  string
 	group string
 	index byte
 }
 
-func (s *Storage) upload(file io.Reader) (string, error) {
-	bs, err := ioutil.ReadAll(file)
+func (s *storage) upload(file io.Reader) (string, error) {
+	b, err := ioutil.ReadAll(file)
 	if err != nil {
 		return "", err
 	}
@@ -31,41 +30,27 @@ func (s *Storage) upload(file io.Reader) (string, error) {
 
 	buf := &bytes.Buffer{}
 	buf.WriteByte(s.index)
-	buf.Write(lengthByte(uint64(len(bs))))
+	buf.Write(lengthByte(uint64(len(b))))
 	buf.Write(make([]byte, 6))
-	buf.Write(bs)
-	respHeader := &Header{
-		length:  uint64(buf.Len()),
-		command: STORAGE_PROTO_CMD_UPLOAD_FILE,
-		status:  0,
+	buf.Write(b)
+	h := header{
+		uint64(buf.Len()),
+		STORAGE_PROTO_CMD_UPLOAD_FILE,
+		0,
 	}
-	conn.Write(respHeader.encode())
-	conn.Write(buf.Bytes())
+	p := newProtocol(h, conn)
+	b, err = p.request(buf.Bytes())
+	if err != nil {
+		return "", err
+	}
 
-	b := make([]byte, 10)
-	_, err = io.ReadFull(conn, b)
-	if err != nil {
-		return "", err
-	}
-	header := &Header{
-		buf: b,
-	}
-	header.decode()
-	if header.status != 0 {
-		return "", errors.New("[storage]状态码错误")
-	}
-	b = make([]byte, header.length)
-	_, err = io.ReadFull(conn, b)
-	if err != nil {
-		return "", err
-	}
 	group := clearZero(string(b[:16]))
 	path := clearZero(string(b[16:]))
 	return group + "/" + path, nil
 }
 
-func (s *Storage) download(fileId string, w io.Writer) error {
-	ss := strings.SplitN(fileId, "/", 2)
+func (s *storage) download(fileID string, w io.Writer) error {
+	ss := strings.SplitN(fileID, "/", 2)
 	group := ss[0]
 	path := ss[1]
 
@@ -82,32 +67,17 @@ func (s *Storage) download(fileId string, w io.Writer) error {
 	copy(b, group)
 	buf.Write(b)
 	buf.WriteString(path)
-
-	header := &Header{
-		length:  uint64(buf.Len()),
-		command: STORAGE_PROTO_CMD_DOWNLOAD_FILE,
-		status:  0,
+	h := header{
+		uint64(buf.Len()),
+		STORAGE_PROTO_CMD_DOWNLOAD_FILE,
+		0,
 	}
-	conn.Write(header.encode())
-	conn.Write(buf.Bytes())
-
-	b = make([]byte, 10)
-	_, err = io.ReadFull(conn, b)
+	p := newProtocol(h, conn)
+	b, err = p.request(buf.Bytes())
 	if err != nil {
 		return err
 	}
-	header = &Header{
-		buf: b,
-	}
-	header.decode()
-	if header.status != 0 {
-		return errors.New("[storage]状态码错误")
-	}
-	b = make([]byte, header.length)
-	_, err = io.ReadFull(conn, b)
-	if err != nil {
-		return err
-	}
+
 	w.Write(b)
 	return nil
 }

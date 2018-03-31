@@ -3,7 +3,8 @@ package fdfs
 import (
 	"bytes"
 	"encoding/binary"
-	"strings"
+	"errors"
+	"io"
 )
 
 const (
@@ -15,14 +16,25 @@ const (
 	STORAGE_PROTO_CMD_UPLOAD_FILE                           = 11
 )
 
-type Header struct {
+type protocol struct {
+	header
+	io.ReadWriter
+}
+
+type header struct {
 	length  uint64
 	command byte
 	status  byte
-	buf     []byte
 }
 
-func (h *Header) encode() []byte {
+func newProtocol(h header, rw io.ReadWriter) *protocol {
+	return &protocol{
+		h,
+		rw,
+	}
+}
+
+func (h *header) encode() []byte {
 	buffer := &bytes.Buffer{}
 	buffer.Write(lengthByte(h.length))
 	buffer.WriteByte(byte(h.command))
@@ -30,18 +42,30 @@ func (h *Header) encode() []byte {
 	return buffer.Bytes()
 }
 
-func (h *Header) decode() {
-	h.length = binary.BigEndian.Uint64(h.buf[0:8])
-	h.command = h.buf[8:9][0]
-	h.status = h.buf[9:10][0]
+func (h *header) decode(b []byte) {
+	h.length = binary.BigEndian.Uint64(b[0:8])
+	h.command = b[8:9][0]
+	h.status = b[9:10][0]
 }
 
-func lengthByte(length uint64) []byte {
-	bs := make([]byte, 8)
-	binary.BigEndian.PutUint64(bs, length)
-	return bs
-}
+func (p *protocol) request(reqBody []byte) (resBody []byte, err error) {
+	p.Write(p.encode())
+	p.Write(reqBody)
 
-func clearZero(s string) string {
-	return strings.Replace(s, "\u0000", "", -1)
+	b := make([]byte, 10)
+	_, err = io.ReadFull(p, b)
+	if err != nil {
+		return nil, err
+	}
+	p.decode(b)
+	if p.status != 0 {
+		return nil, errors.New("[tracker]状态码错误")
+	}
+
+	b = make([]byte, p.length)
+	_, err = io.ReadFull(p, b)
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
 }
