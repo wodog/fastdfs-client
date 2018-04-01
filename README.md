@@ -1,7 +1,7 @@
 ## fastdfs-client
 
-[![Build Status](https://www.travis-ci.org/wodog/fastdfs-client.svg?branch=master)](https://www.travis-ci.org/wodog/fastd-client)
-[![GoDoc](https://godoc.org/github.com/wodog/fastdfs-client?status.svg)](https://godoc.org/github.com/wodog/fastd-client)
+[![Build Status](https://www.travis-ci.org/wodog/fastdfs-client.svg?branch=master)](https://www.travis-ci.org/wodog/fastdfs-client)
+[![GoDoc](https://godoc.org/github.com/wodog/fastdfs-client?status.svg)](https://godoc.org/github.com/wodog/fastdfs-client)
 
 go版的fastdfs客户端
 
