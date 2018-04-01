@@ -1,32 +1,73 @@
 package fdfs
 
 import (
+	"fmt"
+	"log"
 	"os"
 	"testing"
 )
 
-// func TestUpload(t *testing.T) {
-// 	client := New()
-// 	client.AddTracker("zpbeer.com:22122")
-// 	file, err := os.Open("README.md")
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	fileID, err := client.Upload(file)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	fmt.Println(fileID)
-// }
+var fileID string
+var fileName = "README.md"
+var trackerAddr = "zpbeer.com:22122"
+var client = Default()
 
-func TestDownload(t *testing.T) {
-	client := New()
-	err := client.AddTracker("zpbeer.com:22122")
+func init() {
+	err := client.AddTracker(trackerAddr)
 	if err != nil {
 		panic(err)
 	}
-	err = client.Download("group1/M00/00/00/eBg-z1q-1CWAOOR4AAACUPg8FDI1021631", os.Stdout)
+}
+
+func TestUploadDownloadDelete(t *testing.T) {
+	for i := 0; i < 1; i++ {
+		func() {
+			success := t.Run("upload", upload)
+			if !success {
+				return
+			}
+
+			success = t.Run("download", download)
+			if success {
+				t.Run("info", info)
+			}
+
+			t.Run("delete", delete)
+		}()
+	}
+}
+
+func upload(t *testing.T) {
+	file, err := os.Open(fileName)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
+	}
+
+	fileID, err = client.Upload(file)
+	fmt.Println(fileID)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func download(t *testing.T) {
+	err := client.Download(fileID, os.Stdout)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func delete(t *testing.T) {
+	err := client.Delete(fileID)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func info(t *testing.T) {
+	m, err := client.Info(fileID)
+	log.Println(m)
+	if err != nil {
+		t.Fatal(err)
 	}
 }

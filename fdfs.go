@@ -2,39 +2,51 @@ package fdfs
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"time"
+
+	"github.com/wodog/pool"
 )
 
-var timeout = 10 * time.Second
-
-type client struct {
+type Client struct {
+	timeout  time.Duration
+	poolSize uint
 	trackers []*tracker
 }
 
-// New client
-func New() *client {
-	return &client{}
+func Default() *Client {
+	return &Client{
+		timeout:  10 * time.Second,
+		poolSize: 10,
+	}
 }
 
-func (c *client) AddTracker(trackerAddr string) error {
+func (c *Client) AddTracker(trackerAddr string) error {
 	host, port, err := net.SplitHostPort(trackerAddr)
 	if err != nil {
 		return err
 	}
-	c.trackers = append(c.trackers, &tracker{
-		host,
-		port,
+
+	p, err := pool.NewDefault(func() (io.Closer, error) {
+		return net.DialTimeout("tcp", fmt.Sprintf("%s:%s", host, port), c.timeout)
 	})
+	if err != nil {
+		return err
+	}
+
+	t := &tracker{
+		host: host,
+		port: port,
+		Pool: p,
+	}
+
+	c.trackers = append(c.trackers, t)
 	return nil
 }
 
-func (c *client) SetTimeout(t time.Duration) {
-	timeout = t
-}
-
-func (c *client) Upload(file io.Reader) (string, error) {
+func (c *Client) Upload(file io.Reader) (string, error) {
 	tracker, err := c.getTracker()
 	if err != nil {
 		return "", err
@@ -50,7 +62,7 @@ func (c *client) Upload(file io.Reader) (string, error) {
 	return fileID, nil
 }
 
-func (c *client) Download(fileID string, w io.Writer) error {
+func (c *Client) Download(fileID string, w io.Writer) error {
 	tracker, err := c.getTracker()
 	if err != nil {
 		return err
@@ -66,9 +78,41 @@ func (c *client) Download(fileID string, w io.Writer) error {
 	return nil
 }
 
-func (c *client) getTracker() (*tracker, error) {
+func (c *Client) Delete(fileID string) error {
+	tracker, err := c.getTracker()
+	if err != nil {
+		return err
+	}
+	storage, err := tracker.getUploadStorage()
+	if err != nil {
+		return err
+	}
+	err = storage.delete(fileID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) Info(fileID string) (map[string]string, error) {
+	tracker, err := c.getTracker()
+	if err != nil {
+		return nil, err
+	}
+	storage, err := tracker.getUploadStorage()
+	if err != nil {
+		return nil, err
+	}
+	m, err := storage.info(fileID)
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *Client) getTracker() (*tracker, error) {
 	if len(c.trackers) == 0 {
-		return nil, errors.New("没有添加tracker")
+		return nil, errors.New("tracker列表为空")
 	}
 	tracker := c.trackers[0]
 	return tracker, nil

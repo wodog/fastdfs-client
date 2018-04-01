@@ -3,30 +3,32 @@ package fdfs
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"net"
 	"strconv"
 	"strings"
+
+	"github.com/wodog/pool"
 )
 
 type tracker struct {
 	host string
 	port string
+	*pool.Pool
 }
 
 func (t tracker) getUploadStorage() (*storage, error) {
-	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%s", t.host, t.port), timeout)
+	conn, err := t.Acquire()
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close()
+	defer t.Release(conn)
 
 	h := header{
 		0,
 		TRACKER_PROTO_CMD_SERVICE_QUERY_STORE_WITHOUT_GROUP_ONE,
 		0,
 	}
-	p := newProtocol(h, conn)
+	p := newProtocol(h, conn.(net.Conn))
 	b, err := p.request(nil)
 	if err != nil {
 		return nil, err
@@ -50,11 +52,11 @@ func (t tracker) getDownloadStorage(fileID string) (*storage, error) {
 	group := ss[0]
 	path := ss[1]
 
-	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%s", t.host, t.port), timeout)
+	conn, err := t.Acquire()
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close()
+	defer t.Release(conn)
 
 	buf := &bytes.Buffer{}
 	b := make([]byte, 16)
@@ -66,7 +68,7 @@ func (t tracker) getDownloadStorage(fileID string) (*storage, error) {
 		TRACKER_PROTO_CMD_SERVICE_QUERY_FETCH_ONE,
 		0,
 	}
-	p := newProtocol(h, conn)
+	p := newProtocol(h, conn.(net.Conn))
 	b, err = p.request(buf.Bytes())
 	if err != nil {
 		return nil, err

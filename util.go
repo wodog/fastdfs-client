@@ -6,9 +6,9 @@ import (
 )
 
 func lengthByte(length uint64) []byte {
-	bs := make([]byte, 8)
-	binary.BigEndian.PutUint64(bs, length)
-	return bs
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, length)
+	return b
 }
 
 func clearZero(s string) string {
