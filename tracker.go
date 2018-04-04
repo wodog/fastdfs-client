@@ -29,7 +29,11 @@ func (t tracker) getUploadStorage() (*storage, error) {
 		0,
 	}
 	p := newProtocol(h, conn.(net.Conn))
-	b, err := p.request(nil)
+	err = p.request(nil)
+	if err != nil {
+		return nil, err
+	}
+	b, err := p.body()
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +73,11 @@ func (t tracker) getDownloadStorage(fileID string) (*storage, error) {
 		0,
 	}
 	p := newProtocol(h, conn.(net.Conn))
-	b, err = p.request(buf.Bytes())
+	err = p.request(buf.Bytes())
+	if err != nil {
+		return nil, err
+	}
+	b, err = p.body()
 	if err != nil {
 		return nil, err
 	}

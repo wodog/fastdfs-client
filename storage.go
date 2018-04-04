@@ -41,7 +41,11 @@ func (s *storage) upload(file io.Reader) (string, error) {
 		0,
 	}
 	p := newProtocol(h, conn)
-	b, err = p.request(buf.Bytes())
+	err = p.request(buf.Bytes())
+	if err != nil {
+		return "", err
+	}
+	b, err = p.body()
 	if err != nil {
 		return "", err
 	}
@@ -75,12 +79,16 @@ func (s *storage) download(fileID string, w io.Writer) error {
 		0,
 	}
 	p := newProtocol(h, conn)
-	b, err = p.request(buf.Bytes())
+	err = p.request(buf.Bytes())
 	if err != nil {
 		return err
 	}
 
-	w.Write(b)
+	_, err = io.CopyN(w, p, int64(p.length))
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -106,7 +114,7 @@ func (s *storage) delete(fileID string) error {
 		0,
 	}
 	p := newProtocol(h, conn)
-	_, err = p.request(buf.Bytes())
+	err = p.request(buf.Bytes())
 	if err != nil {
 		return err
 	}
@@ -136,7 +144,11 @@ func (s *storage) info(fileID string) (map[string]string, error) {
 		0,
 	}
 	p := newProtocol(h, conn)
-	b, err = p.request(buf.Bytes())
+	err = p.request(buf.Bytes())
+	if err != nil {
+		return nil, err
+	}
+	b, err = p.body()
 	if err != nil {
 		return nil, err
 	}

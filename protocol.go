@@ -51,24 +51,27 @@ func (h *header) decode(b []byte) {
 	h.status = b[9]
 }
 
-func (p *protocol) request(reqBody []byte) (resBody []byte, err error) {
-	p.Write(p.encode())
-	p.Write(reqBody)
-
-	b := make([]byte, 10)
-	_, err = io.ReadFull(p, b)
-	if err != nil {
-		return nil, err
-	}
-	p.decode(b)
-	if p.status != 0 {
-		return nil, errors.New("[tracker]状态码错误")
-	}
-
-	b = make([]byte, p.length)
-	_, err = io.ReadFull(p, b)
+func (p *protocol) body() ([]byte, error) {
+	b := make([]byte, p.length)
+	_, err := io.ReadFull(p, b)
 	if err != nil {
 		return nil, err
 	}
 	return b, nil
+}
+
+func (p *protocol) request(reqBody []byte) error {
+	p.Write(p.encode())
+	p.Write(reqBody)
+
+	b := make([]byte, 10)
+	_, err := io.ReadFull(p, b)
+	if err != nil {
+		return err
+	}
+	p.decode(b)
+	if p.status != 0 {
+		return errors.New("[tracker]状态码错误")
+	}
+	return nil
 }
