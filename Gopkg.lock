@@ -5,7 +5,7 @@
   branch = "master"
   name = "github.com/wodog/pool"
   packages = ["."]
-  revision = "f30fda2164bd5171031bc9e4ee07aeed95fea8e4"
+  revision = "6ba9ade20bd93593545ff3619c13a1de575fb7f0"
 
 [solve-meta]
   analyzer-name = "dep"
