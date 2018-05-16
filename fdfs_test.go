@@ -9,7 +9,7 @@ import (
 
 var fileID string
 var fileName = "README.md"
-var trackerAddr = "yxsm-test:22122"
+var trackerAddr = "120.25.92.210:22122"
 var client = Default()
 
 func init() {
