@@ -55,14 +55,14 @@ func (s *storage) upload(file io.Reader) (string, error) {
 	return group + "/" + path, nil
 }
 
-func (s *storage) download(fileID string, w io.Writer) error {
+func (s *storage) open(fileID string) (io.Reader, error) {
 	ss := strings.SplitN(fileID, "/", 2)
 	group := ss[0]
 	path := ss[1]
 
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", s.host, s.port))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer conn.Close()
 
@@ -81,15 +81,16 @@ func (s *storage) download(fileID string, w io.Writer) error {
 	p := newProtocol(h, conn)
 	err = p.request(buf.Bytes())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = io.CopyN(w, p, int64(p.length))
+	buf = &bytes.Buffer{}
+	_, err = io.CopyN(buf, p, int64(p.length))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return buf, nil
 }
 
 func (s *storage) delete(fileID string) error {

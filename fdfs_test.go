@@ -2,14 +2,14 @@ package fdfs
 
 import (
 	"fmt"
-	"log"
+	"io/ioutil"
 	"os"
 	"testing"
 )
 
 var fileID string
 var fileName = "README.md"
-var trackerAddr = "zpbeer.com:22122"
+var trackerAddr = "yxsm-test:22122"
 var client = Default()
 
 func init() {
@@ -27,7 +27,7 @@ func TestUploadDownloadDelete(t *testing.T) {
 				return
 			}
 
-			success = t.Run("download", download)
+			success = t.Run("open", open)
 			if success {
 				t.Run("info", info)
 			}
@@ -44,17 +44,22 @@ func upload(t *testing.T) {
 	}
 
 	fileID, err = client.Upload(file)
-	fmt.Println(fileID)
 	if err != nil {
 		t.Fatal(err)
 	}
+	fmt.Println("upload:", fileID)
 }
 
-func download(t *testing.T) {
-	err := client.Download(fileID, os.Stdout)
+func open(t *testing.T) {
+	r, err := client.Open(fileID)
 	if err != nil {
 		t.Fatal(err)
 	}
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println("open:", b)
 }
 
 func delete(t *testing.T) {
@@ -62,12 +67,13 @@ func delete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	fmt.Println("delete:", "success")
 }
 
 func info(t *testing.T) {
 	m, err := client.Info(fileID)
-	log.Println(m)
 	if err != nil {
 		t.Fatal(err)
 	}
+	fmt.Println("info:", m)
 }

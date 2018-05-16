@@ -62,20 +62,20 @@ func (c *Client) Upload(file io.Reader) (string, error) {
 	return fileID, nil
 }
 
-func (c *Client) Download(fileID string, w io.Writer) error {
+func (c *Client) Open(fileID string) (io.Reader, error) {
 	tracker, err := c.getTracker()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	storage, err := tracker.getDownloadStorage(fileID)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	err = storage.download(fileID, w)
+	r, err := storage.open(fileID)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return r, nil
 }
 
 func (c *Client) Delete(fileID string) error {

@@ -27,7 +27,7 @@ func main() {
   fileId := client.Upload(file)
 
   // download file
-  client.Download(fileId, os.Stdout)
+  reader, err := client.Open(fileId)
 }
 ```
 
