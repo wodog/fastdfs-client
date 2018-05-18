@@ -64,7 +64,6 @@ func (s *storage) open(fileID string) (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close()
 
 	buf := &bytes.Buffer{}
 	buf.Write(lengthByte(0))
@@ -84,13 +83,7 @@ func (s *storage) open(fileID string) (io.Reader, error) {
 		return nil, err
 	}
 
-	buf = &bytes.Buffer{}
-	_, err = io.CopyN(buf, p, int64(p.length))
-	if err != nil {
-		return nil, err
-	}
-
-	return buf, nil
+	return io.LimitReader(p, int64(p.length)), nil
 }
 
 func (s *storage) delete(fileID string) error {
