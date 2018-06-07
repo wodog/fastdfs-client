@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 )
@@ -71,7 +72,7 @@ func (p *protocol) request(reqBody []byte) error {
 	}
 	p.decode(b)
 	if p.status != 0 {
-		return errors.New("[tracker]状态码错误")
+		return errors.New(fmt.Sprintf("[Err]: status: %d, command: %d, length: %d", p.status, p.command, p.length))
 	}
 	return nil
 }
